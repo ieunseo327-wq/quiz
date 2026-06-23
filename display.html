@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>보물찾기 글자판 🗺️</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 20px;
+    overflow: hidden;
+  }
+
+  /* 별 배경 */
+  .stars {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .star {
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+    animation: twinkle 2s infinite alternate;
+  }
+
+  @keyframes twinkle {
+    from { opacity: 0.2; }
+    to { opacity: 1; }
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 1000px;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 42px;
+    font-weight: 900;
+    color: #FFD700;
+    margin-bottom: 8px;
+    text-shadow: 0 0 20px rgba(255,215,0,0.5);
+  }
+
+  .subtitle {
+    text-align: center;
+    font-size: 18px;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 50px;
+  }
+
+  .teams {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 40px;
+  }
+
+  .team-card {
+    background: rgba(255,255,255,0.08);
+    border: 2px solid rgba(255,255,255,0.15);
+    border-radius: 24px;
+    padding: 28px 24px;
+    text-align: center;
+    transition: all 0.3s;
+  }
+
+  .team-card.completed {
+    background: rgba(255,255,255,0.15);
+    border-color: rgba(255,215,0,0.5);
+    box-shadow: 0 0 30px rgba(255,215,0,0.2);
+  }
+
+  .team-label {
+    font-size: 20px;
+    font-weight: 900;
+    color: rgba(255,255,255,0.6);
+    margin-bottom: 16px;
+    letter-spacing: 2px;
+  }
+
+  .team-card.completed .team-label {
+    color: #FFD700;
+  }
+
+  .letter-boxes {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .letter-box {
+    width: 64px;
+    height: 64px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.1);
+    border: 2px dashed rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    font-weight: 900;
+    color: transparent;
+    transition: all 0.3s;
+  }
+
+  .letter-box.revealed {
+    background: rgba(255,215,0,0.2);
+    border: 2px solid rgba(255,215,0,0.6);
+    color: #FFD700;
+    animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  }
+
+  @keyframes popIn {
+    0% { transform: scale(0) rotate(-10deg); opacity: 0; }
+    60% { transform: scale(1.2) rotate(5deg); }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  }
+
+  .status-icon {
+    font-size: 28px;
+    margin-bottom: 8px;
+  }
+
+  /* 완성 문장 */
+  .full-sentence {
+    background: rgba(255,215,0,0.1);
+    border: 2px solid rgba(255,215,0,0.3);
+    border-radius: 20px;
+    padding: 24px;
+    text-align: center;
+  }
+
+  .full-sentence p {
+    font-size: 16px;
+    color: rgba(255,255,255,0.6);
+    margin-bottom: 16px;
+    font-weight: 700;
+  }
+
+  .sentence-boxes {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .sentence-box {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.08);
+    border: 2px dashed rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    font-weight: 900;
+    color: transparent;
+    transition: all 0.5s;
+  }
+
+  .sentence-box.show {
+    background: rgba(255,215,0,0.25);
+    border-color: #FFD700;
+    color: #FFD700;
+    animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  }
+
+  /* 완료 폭죽 */
+  .firework {
+    position: fixed;
+    pointer-events: none;
+    z-index: 999;
+    font-size: 40px;
+    animation: fireworkAnim 1.5s ease forwards;
+  }
+
+  @keyframes fireworkAnim {
+    0% { transform: translateY(0) scale(0); opacity: 1; }
+    50% { transform: translateY(-100px) scale(1.5); opacity: 1; }
+    100% { transform: translateY(-200px) scale(0); opacity: 0; }
+  }
+
+  /* 리셋 버튼 */
+  .reset-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: rgba(255,255,255,0.5);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    z-index: 10;
+  }
+
+  .reset-btn:hover {
+    background: rgba(255,0,0,0.2);
+    color: white;
+  }
+</style>
+</head>
+<body>
+
+<div class="stars" id="stars"></div>
+
+<div class="container">
+  <h1>🗺️ 보물을 찾아라!</h1>
+  <p class="subtitle">각 조가 문제를 다 풀면 글자가 나타나요</p>
+
+  <div class="teams">
+    <!-- 1조 -->
+    <div class="team-card" id="teamCard1">
+      <div class="status-icon" id="icon1">⏳</div>
+      <div class="team-label">1조</div>
+      <div class="letter-boxes">
+        <div class="letter-box" id="t1l0">보</div>
+        <div class="letter-box" id="t1l1">물</div>
+        <div class="letter-box" id="t1l2">은</div>
+        <div class="letter-box" id="t1l3">꿈</div>
+      </div>
+    </div>
+
+    <!-- 2조 -->
+    <div class="team-card" id="teamCard2">
+      <div class="status-icon" id="icon2">⏳</div>
+      <div class="team-label">2조</div>
+      <div class="letter-boxes">
+        <div class="letter-box" id="t2l0">꾸</div>
+        <div class="letter-box" id="t2l1">러</div>
+        <div class="letter-box" id="t2l2">기</div>
+        <div class="letter-box" id="t2l3">에</div>
+      </div>
+    </div>
+
+    <!-- 3조 -->
+    <div class="team-card" id="teamCard3">
+      <div class="status-icon" id="icon3">⏳</div>
+      <div class="team-label">3조</div>
+      <div class="letter-boxes">
+        <div class="letter-box" id="t3l0">있</div>
+        <div class="letter-box" id="t3l1">어</div>
+        <div class="letter-box" id="t3l2">내</div>
+        <div class="letter-box" id="t3l3">자</div>
+      </div>
+    </div>
+
+    <!-- 4조 -->
+    <div class="team-card" id="teamCard4">
+      <div class="status-icon" id="icon4">⏳</div>
+      <div class="team-label">4조</div>
+      <div class="letter-boxes">
+        <div class="letter-box" id="t4l0">리</div>
+        <div class="letter-box" id="t4l1">로</div>
+        <div class="letter-box" id="t4l2">와</div>
+        <div class="letter-box" id="t4l3">줘</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 완성 문장 -->
+  <div class="full-sentence">
+    <p>🔑 16글자를 모으면 보물의 위치가 나타나요!</p>
+    <div class="sentence-boxes" id="sentenceBoxes"></div>
+  </div>
+</div>
+
+<button class="reset-btn" onclick="resetData()">🔄 초기화</button>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  databaseURL: "https://quiz-73a03-default-rtdb.firebaseio.com"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const teamData = {
+  1: ["보","물","은","꿈"],
+  2: ["꾸","러","기","에"],
+  3: ["있","어","내","자"],
+  4: ["리","로","와","줘"]
+};
+
+const fullSentence = ["보","물","은","꿈","꾸","러","기","에","있","어","내","자","리","로","와","줘"];
+
+// 별 생성
+const starsEl = document.getElementById('stars');
+for (let i = 0; i < 80; i++) {
+  const star = document.createElement('div');
+  star.className = 'star';
+  const size = Math.random() * 3 + 1;
+  star.style.cssText = `
+    width: ${size}px; height: ${size}px;
+    top: ${Math.random() * 100}%;
+    left: ${Math.random() * 100}%;
+    animation-delay: ${Math.random() * 2}s;
+    animation-duration: ${1.5 + Math.random() * 2}s;
+  `;
+  starsEl.appendChild(star);
+}
+
+// 문장 박스 생성
+const sentenceBoxes = document.getElementById('sentenceBoxes');
+fullSentence.forEach((_, i) => {
+  const box = document.createElement('div');
+  box.className = 'sentence-box';
+  box.id = `sbox${i}`;
+  box.textContent = fullSentence[i];
+  sentenceBoxes.appendChild(box);
+});
+
+let completedTeams = new Set();
+
+function revealTeam(teamNum) {
+  if (completedTeams.has(teamNum)) return;
+  completedTeams.add(teamNum);
+
+  const card = document.getElementById(`teamCard${teamNum}`);
+  card.classList.add('completed');
+  document.getElementById(`icon${teamNum}`).textContent = '🎉';
+
+  // 글자 하나씩 뿅 나타나기
+  const letters = teamData[teamNum];
+  letters.forEach((letter, i) => {
+    setTimeout(() => {
+      const box = document.getElementById(`t${teamNum}l${i}`);
+      box.classList.add('revealed');
+      launchFirework();
+    }, i * 200);
+  });
+
+  // 전체 문장 업데이트
+  setTimeout(() => updateSentence(teamNum), letters.length * 200 + 300);
+}
+
+function updateSentence(teamNum) {
+  const offsets = { 1: 0, 2: 4, 3: 8, 4: 12 };
+  const offset = offsets[teamNum];
+  teamData[teamNum].forEach((letter, i) => {
+    setTimeout(() => {
+      const box = document.getElementById(`sbox${offset + i}`);
+      box.classList.add('show');
+    }, i * 150);
+  });
+}
+
+function launchFirework() {
+  const emojis = ['🎆','✨','🌟','💫','🎇','⭐'];
+  const fw = document.createElement('div');
+  fw.className = 'firework';
+  fw.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+  fw.style.left = Math.random() * 90 + 5 + '%';
+  fw.style.top = Math.random() * 60 + 20 + '%';
+  document.body.appendChild(fw);
+  setTimeout(() => fw.remove(), 1500);
+}
+
+// Firebase 실시간 감지
+const successRef = ref(db, 'success');
+onValue(successRef, (snapshot) => {
+  const data = snapshot.val();
+  if (!data) return;
+
+  for (let i = 1; i <= 4; i++) {
+    if (data[`team${i}`] && !completedTeams.has(i)) {
+      revealTeam(i);
+    }
+  }
+});
+
+// 초기화
+window.resetData = function() {
+  if (confirm('정말 초기화할까요?')) {
+    remove(ref(db, 'success'));
+    completedTeams.clear();
+    // 화면 초기화
+    for (let t = 1; t <= 4; t++) {
+      document.getElementById(`teamCard${t}`).classList.remove('completed');
+      document.getElementById(`icon${t}`).textContent = '⏳';
+      for (let l = 0; l < 4; l++) {
+        document.getElementById(`t${t}l${l}`).classList.remove('revealed');
+      }
+    }
+    fullSentence.forEach((_, i) => {
+      document.getElementById(`sbox${i}`).classList.remove('show');
+    });
+  }
+}
+</script>
+</body>
+</html>
